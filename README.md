@@ -144,11 +144,16 @@ Om naadloze naamresolutie tussen de Hub spokes en de workloads te garanderen zon
 * De zone is via **Virtual Network Links** gekoppeld aan alle drie de VNets.
 * Voor de Spokes is **Auto-Registration** ingeschakeld. Hierdoor registreren virtuele machines hun private IP-adres direct bij het opstarten binnen de DNS-zone, wat handmatig DNS-beheer elimineert.
 
+![Private DNS VNet Links](screenshots/17_private_dns_vnet_links.PNG)
+![Private DNS Auto-Registration Records](screenshots/18_private_dns_auto_registration_records.PNG)
+
 ---
 
 ## 7. Azure Firewall Policy & Rule Collections
 
 De Azure Firewall Basic (`afw-hub-prod`) fungeert als de centrale poortwachter voor al het uitgaande verkeer naar het internet en draait in een strikte "Deny All" configuratie. Omdat de Spokes via User Defined Routes (UDR) hun internetverkeer (`0.0.0.0/0`) naar de firewall sturen, bepaalt de Firewall Policy exclusief welke externe resources veilig benaderd mogen worden.
+
+![Azure Firewall Basic Deployment Wizard](screenshots/21_firewall_basic_deployment_wizard.PNG)
 
 De volgende Rule Collections zijn toegepast op de firewall policy (`afwp-hub-prod`):
 
@@ -156,9 +161,13 @@ De volgende Rule Collections zijn toegepast op de firewall policy (`afwp-hub-pro
 
 * **allow-outbound-ping:** Staat ICMP-verkeer (pings) toe van beide Spokes (`10.1.0.0/16` en `10.2.0.0/16`) naar het internet (`*`). Dit stelt workloads in staat om externe connectiviteit te verifiëren via de centrale firewall.
 
+![Firewall Policy Network Rules](screenshots/23a_firewall_policy_network_rules.PNG)
+
 ### Layer 7 Application Rules (`rc-apps-shared` - Priority 110)
 
 * **allow-ubuntu-updates:** Maakt gebruik van FQDN-filtering om HTTP (poort 80) en HTTPS (poort 443) verkeer uitsluitend toe te staan naar de officiële Ubuntu-domeinen (`*.ubuntu.com` en `ubuntu.com`). Dit stelt de Linux-workloads in staat om updates en security patches veilig op te halen, terwijl regulier surfverkeer strikt geblokkeerd blijft.
+
+![Firewall Policy Application Rules](screenshots/23b_firewall_policy_application_rules.PNG)
 
 ---
 
@@ -170,11 +179,16 @@ Om aan te tonen dat het netwerkontwerp en de centrale beveiliging correct functi
 
 De subnets in de Spokes maken gebruik van Route Tables waarin al het externe verkeer (`0.0.0.0/0`) via een Virtual Appliance naar het private IP van de Azure Firewall (`10.0.4.4`) wordt gedwongen.
 
+![Bastion Secure Login Interface](screenshots/19_bastion_secure_login_interface.PNG)
+![Bastion VM Ping Timeout Bewijs](screenshots/20_bastion_vm_ping_timeout_proof.PNG)
+
 ### Testfase & Bewijsvoering Connectiviteit
 
 #### 1. Gecentraliseerde Internet Route (Validatie Azure Firewall)
 
 Vanaf `vm-spoke1-prod` slaagt een ping naar het externe IP-adres `8.8.8.8` direct met **0% packet loss** (Screenshot 24). Dit bewijst dat de UDR voor `0.0.0.0/0` het verkeer succesvol naar de Azure Firewall stuurt, en dat de firewall dit doorlaat op basis van de geconfigureerde Network Rule.
+
+![Bastion Firewall Curl Success Proof](screenshots/24_bastion_firewall_curl_success_proof.PNG)
 
 #### 2. Inter-Spoke Validatietest (De "Peering Bypass" Cloud Gotcha)
 
@@ -241,6 +255,11 @@ Na de succesvolle handmatige validatiefase (Proof of Concept) is de volledige Hu
 * **Oplossing van de Peering Bypass:** In de code zijn de Route Tables (`rt-spoke1-to-hub-tf` en `rt-spoke2-to-hub-tf`) direct uitgebreid met specifieke routes voor het inter-spoke verkeer (`10.1.0.0/16` <-> `10.2.0.0/16`). Hierdoor wordt het interne verkeer nu wél dwingend via de Azure Firewall geleid.
 
 * **Strikte Subnet-scheiding:** De menselijke fout uit de handmatige fase (waarbij Spoke 2 per ongeluk naar de Route Table van Spoke 1 wees) is volledig opgelost door strikte, afzonderlijke resource-associaties in code.
+
+![Terraform Resource Groep en Tags](screenshots/30_tf_resource_group_and_tags.PNG)
+![Terraform Firewall Basic Subnets](screenshots/31_tf_firewall_basic_subnets.PNG)
+![Terraform Route Table Interspoke Fixed](screenshots/32_tf_route_table_interspoke_fixed.PNG)
+![Terraform Monitoring en DNS Links](screenshots/33_tf_monitoring_and_dns_links.PNG)
 
 ### Bewijsvoering van de Terraform Blauwdruk (Planfase)
 
@@ -2649,6 +2668,9 @@ De auditing-pijplijn registreerde direct de legitieme firewall-verkeersstromen i
 * **`AZFWNetworkRule`**: Vangt de ICMP-pings tussen de spokes op en markeert deze als `Allow` op basis van de Terraform policy.
 
 * **`AZFWApplicationRule`**: Logt de uitgaande HTTP/HTTPS-pakketten van de VM's richting de goedgekeurde Ubuntu-repositories.
+
+![Azure Firewall KQL Logs Handmatige Validatie](screenshots/26_firewall_kql_logs_validation.PNG)
+![Terraform Firewall KQL Logs Geautomatiseerd](screenshots/34_tf_firewall_kql_logs.PNG)
 
 ### 3. Geautomatiseerde Afbraak (FinOps Clean-up)
 
