@@ -36,7 +36,7 @@ Om IP-overlapping (IP overlap) te voorkomen dat subnets elkaar in de weg zitten,
 ![Hub Subnet Configuratie](screenshots/02_hub_vnet_subnets_config.PNG)
 
 ### Status na implementatie van de VNets & Subnetten:
-![Virtual Networks Overzicht](screenshots/03_virtual_networks_overview.png)
+![Virtual Networks Overzicht](screenshots/03_virtual_networks_overview.PNG)
 ![Alle Subnetten Geconfigureerd](screenshots/12_hub_vnet_all_subnets_configured.PNG)
 
 ---
@@ -103,27 +103,27 @@ graph TD
 ```
 
 ### Geconfigureerde netwerkverbindingen (VNet Peerings):
-![VNet Peerings Connected](screenshots/05_vnet_peerings_connected.png)
+![VNet Peerings Connected](screenshots/05_vnet_peerings_connected.PNG)
 
 ---
 
 ## 5. Security & Toegangscontrole (Network Security Groups)
 Om te voldoen aan het **Zero Trust-principe**, passen we het principe van *least privilege* toe via **Network Security Groups (NSGs)**. Elk subnet is gekoppeld aan een specifieke NSG. We activeren de moderne **Private Subnet** standaard (geen standaard uitgaand internet), waardoor resources standaard volledig afgesloten zijn.
 
-![Gekoppelde NSG Overzicht](screenshots/06_nsg_resources_overview.png)
+![Gekoppelde NSG Overzicht](screenshots/06_nsg_resources_overview.PNG)
 
 ### NSG: `nsg-spoke1-prod` (Productie Subnet Beveiliging)
 * `Allow-SSH-From-MgmtSubnet` (Priority 120): Staat SSH-beheer toe *uitsluitend* vanaf het Management Subnet (`10.0.3.0/24`).
 * `Deny-Spoke2-Test-Traffic` (Priority 130): Blokkeert proactief al het verkeer komend uit de testomgeving (`10.2.0.0/16`) om kruisbesmetting te voorkomen.
 
-![NSG Spoke 1 Rules](screenshots/07_nsg_spoke1_prod_rules.png)
+![NSG Spoke 1 Rules](screenshots/07_nsg_spoke1_prod_rules.PNG)
 ![NSG Spoke 1 CLI Rules](screenshots/10_cli_nsg_spoke1_prod_rules.PNG)
 
 ### NSG: `nsg-spoke2-test` (Test Subnet Beveiliging)
 * `Allow-SSH-From-MgmtSubnet` (Priority 120): Staat SSH-beheer toe vanaf het Management Subnet (`10.0.3.0/24`).
 * `Deny-Spoke1-Prod-Traffic` (Priority 130): Blokkeert inkomend verkeer vanuit het productienetwerk om harde scheiding van testdata te waarborgen.
 
-![NSG Spoke 2 Rules](screenshots/08_nsg_spoke2_test_rules.png)
+![NSG Spoke 2 Rules](screenshots/08_nsg_spoke2_test_rules.PNG)
 ![NSG Spoke 2 CLI Rules](screenshots/09_cli_nsg_spoke2_test_rules.PNG)
 
 *Aanvullend zijn de specifieke beheerregels voor de hub-infrastructuur via CLI gevalideerd:*
@@ -269,9 +269,8 @@ De definitieve lancering en de live-prompt waarbij de infrastructuur is goedgeke
 
 Hierbelow bevindt zich de volledige, gecensureerde log-output van de Terraform-opzet ter inspectie:
 
-<div style="max-height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; background-color: #f6f8fa; border-radius: 6px;">
+<pre>
 
-```hcl
 PS C:\terraform> terraform plan
 
 Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the
@@ -2613,9 +2612,8 @@ azurerm_monitor_diagnostic_setting.fw_diag: Creating...
 azurerm_monitor_diagnostic_setting.fw_diag: Still creating... [00m10s elapsed]
 azurerm_monitor_diagnostic_setting.fw_diag: Creation complete after 13s [id=/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-secure-hubspoke-tf/providers/Microsoft.Network/azureFirewalls/afw-hub-prod-tf|firewall-diagnostics-to-law]
 Apply complete! Resources: 42 added, 0 changed, 0 destroyed.
-```
 
-</div>
+</pre>
 
 ---
 
@@ -2649,9 +2647,8 @@ Meteen na het veiligstellen van de testresultaten is de volledige infrastructuur
 
 Hieronder bevindt zich de volledige, gecensureerde log-output van de Terraform-afbraak ter inspectie:
 
-<div style="max-height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; background-color: #f6f8fa; border-radius: 6px;">
+<pre>
 
-```hcl
 PS C:\terraform> terraform destroy
 azurerm_resource_group.rg: Refreshing state... [id=/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-secure-hubspoke-tf]
 azurerm_virtual_network.hub: Refreshing state... [id=/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-secure-hubspoke-tf/providers/Microsoft.Network/virtualNetworks/vnet-hub-prod-tf]
@@ -4385,9 +4382,8 @@ azurerm_resource_group.rg: Still destroying... [id=/subscriptions/xxxxxxxx-xxxx-
 azurerm_resource_group.rg: Destruction complete after 22s
 
 Destroy complete! Resources: 42 destroyed.
-PS C:\terraform> 
-```
+PS C:\terraform>
 
-</div>
+</pre>
 
 ---
