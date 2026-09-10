@@ -1,0 +1,21 @@
+# Local Terraform directories (providers and modules)
+.terraform/
+
+# Terraform state files (contain passwords and private IPs in plain text!)
+*.tfstate
+*.tfstate.*
+
+# Crash logs and override files
+*.clog
+*.tfvars
+*.tfvars.json
+*.override.tf
+*.override.tf.json
+
+# CLI configuration and credentials
+.terraformrc
+terraform.rc
+
+# OS specific files
+.DS_Store
+Thumbs.db
