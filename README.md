@@ -147,6 +147,7 @@ Om naadloze naamresolutie tussen de Hub spokes en de workloads te garanderen zon
 ---
 
 ## 7. Azure Firewall Policy & Rule Collections
+
 De Azure Firewall Basic (`afw-hub-prod`) fungeert als de centrale poortwachter voor al het uitgaande verkeer naar het internet en draait in een strikte "Deny All" configuratie. Omdat de Spokes via User Defined Routes (UDR) hun internetverkeer (`0.0.0.0/0`) naar de firewall sturen, bepaalt de Firewall Policy exclusief welke externe resources veilig benaderd mogen worden.
 
 De volgende Rule Collections zijn toegepast op de firewall policy (`afwp-hub-prod`):
@@ -179,7 +180,9 @@ Vanaf `vm-spoke1-prod` slaagt een ping naar het externe IP-adres `8.8.8.8` direc
 
 Om te testen of de spokes elkaar konden bereiken, is er op de Network Security Group van Spoke 2 (`nsg-spoke2-test`) een specifieke regel toegevoegd: `Allow-Ping-From-Firewall` (Priority 110), welke ICMP-verkeer tussen de spoke IP-ranges toestaat.
 
-* Een ping vanaf `vm-spoke1-prod` naar het private IP van `vm-spoke2-test` (`10.2.1.4`) **slaagde direct** (Screenshot 25).
+* Een ping vanaf `vm-spoke1-prod` naar het private IP van `vm-spoke2-test` (`10.2.1.4`) **slaagde direct**.
+
+![Bastion Interspoke Ping Success pProof](screenshots/25_bastion_interspoke_ping_success_proof.PNG)
 
 > [!IMPORTANT]
 > **Architecturale 'Lesson Learned' & Cloud Gotcha:**
@@ -267,10 +270,12 @@ De definitieve lancering en de live-prompt waarbij de infrastructuur is goedgeke
 
 ![Terraform Apply Complete](screenshots/29b_terraform_apply_complete.PNG)
 
-Hierbelow bevindt zich de volledige, gecensureerde log-output van de Terraform-opzet ter inspectie:
+Hieronder bevindt zich de volledige, gecensureerde log-output van de Terraform-opzet ter inspectie:
 
-<pre>
+<details>
+<summary>📋 Klik hier om de volledige live uitrol (Apply-logs) te bekijken</summary>
 
+```hcl
 PS C:\terraform> terraform plan
 
 Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the
@@ -2612,8 +2617,8 @@ azurerm_monitor_diagnostic_setting.fw_diag: Creating...
 azurerm_monitor_diagnostic_setting.fw_diag: Still creating... [00m10s elapsed]
 azurerm_monitor_diagnostic_setting.fw_diag: Creation complete after 13s [id=/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-secure-hubspoke-tf/providers/Microsoft.Network/azureFirewalls/afw-hub-prod-tf|firewall-diagnostics-to-law]
 Apply complete! Resources: 42 added, 0 changed, 0 destroyed.
-
-</pre>
+```
+</details>
 
 ---
 
@@ -2647,8 +2652,10 @@ Meteen na het veiligstellen van de testresultaten is de volledige infrastructuur
 
 Hieronder bevindt zich de volledige, gecensureerde log-output van de Terraform-afbraak ter inspectie:
 
-<pre>
+<details>
+<summary>🗑️ Klik hier om de geautomatiseerde afbraak (Destroy-logs) te bekijken</summary>
 
+```hcl
 PS C:\terraform> terraform destroy
 azurerm_resource_group.rg: Refreshing state... [id=/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-secure-hubspoke-tf]
 azurerm_virtual_network.hub: Refreshing state... [id=/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-secure-hubspoke-tf/providers/Microsoft.Network/virtualNetworks/vnet-hub-prod-tf]
@@ -4383,7 +4390,8 @@ azurerm_resource_group.rg: Destruction complete after 22s
 
 Destroy complete! Resources: 42 destroyed.
 PS C:\terraform>
+```
 
-</pre>
+</details>
 
 ---
