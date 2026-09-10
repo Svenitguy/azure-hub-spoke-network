@@ -293,6 +293,15 @@ De definitieve lancering en de live-prompt waarbij de infrastructuur is goedgeke
 
 ![Terraform Apply Complete](screenshots/29b_terraform_apply_complete.PNG)
 
+> [!NOTE]
+> **Metrische Analyse van de Uitrol:**
+> De volledige geautomatiseerde uitrol van alle 42 resources via de Azure API nam in totaal **10 minuten en 13 seconden** in beslag. Uit de logs blijkt dat de deploymenttijd nagenoeg volledig bepaald wordt door de zware PaaS-componenten van Microsoft:
+> * `azurerm_bastion_host.bastion`: Voltooid na **9 minuten en 45 seconden**.
+> * `azurerm_firewall.fw`: Voltooid na exact **10 minuten en 0 seconden**.
+> 
+> Dit bewijst de enorme efficiëntie van Infrastructure as Code: een uiterst complexe en foutgevoelige enterprise-architectuur staat binnen 10 minuten volledig operationeel live.
+
+
 Hieronder bevindt zich de volledige, gecensureerde log-output van de Terraform-opzet ter inspectie:
 
 <details>
@@ -2675,6 +2684,12 @@ De auditing-pijplijn registreerde direct de legitieme firewall-verkeersstromen i
 ### 3. Geautomatiseerde Afbraak (FinOps Clean-up)
 
 Meteen na het veiligstellen van de testresultaten is de volledige infrastructuur vernietigd via de CLI (`terraform destroy`) om onnodige cloudkosten buiten werktijd te elimineren. De succesvolle de-provisioning van alle 42 resources is vastgelegd in de terminal logs: `Destroy complete! Resources: 42 destroyed.`
+
+> [!NOTE]
+> **Metrische Analyse van de Afbraak:**
+> De volledige vernietiging en opschoning van de landing zone duurde in totaal **15 minuten en 40 seconden**. Dit proces duurt langer dan de uitrol omdat Azure de data- en beheerlijnen van de firewall uiterst grondig moet de-provisionen:
+> * `azurerm_firewall.fw`: Volledig ontmanteld na **15 minuten och 5 seconden**.
+> * De overige 41 resources (inclusief VNets, subnets en de Resource Group) werden daarna in de resterende 35 seconden parallel opgeruimd.
 
 Hieronder bevindt zich de volledige, gecensureerde log-output van de Terraform-afbraak ter inspectie:
 
