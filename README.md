@@ -210,6 +210,10 @@ In een enterprise-omgeving is het bewaken van het cloudbudget net zo belangrijk 
 
 * **Activity Log Alerts:** Er is een centrale Action Group ingericht die direct een e-mail alert triggert bij elke administratieve wijziging (zoals het aanmaken of wijzigen van een Azure Firewall of Bastion-host). Dit garandeert 100% auditability.
 
+Hieronder bevindt zich de officiële Azure Cost Management-analyse, specifiek gefilterd op onze project-tag (`Project = Secure-Hub-Spoke`). Door de granulariteit cumulatief in te stellen en te groeperen op resource-niveau, wordt de exacte kostenverdeling per Azure-service (zoals de Firewall en VM's) tijdens de infrastructuurcyclus transparant aangetoond:
+
+![Azure Cost Management Resource Break-down](screenshots/35_tf_finops_cost_analysis.PNG)
+
 ---
 
 ## 10. Lessons Learned & Cloud Gotchas
