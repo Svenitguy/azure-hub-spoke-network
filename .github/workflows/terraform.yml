@@ -13,11 +13,17 @@ jobs:
   terraform:
     name: 'Terraform Validation & Deployment'
     runs-on: ubuntu-latest
+    # Vanaf HIER voeg je deze twee regels toe:
+    defaults:
+      run:
+        working-directory: ./terraform
+    # Tot HIER
     env:
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
       ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+
 
     steps:
     # 1. Haal de code op uit de GitHub repository
