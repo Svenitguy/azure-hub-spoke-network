@@ -246,6 +246,13 @@ Tijdens de handmatige Proof of Concept (PoC) fase kwamen drie cruciale Azure-pla
 
 Na de succesvolle handmatige validatiefase (Proof of Concept) is de volledige Hub-and-Spoke architectuur vertaald naar declaratieve code met **HashiCorp Terraform**. Dit elimineert menselijke configuratiefouten en maakt de landing zone volledig consistent en herbruikbaar (FinOps best practice voor lab-omgevingen).
 
+### Enterprise Remote State Management (State Locking)
+In plaats van het kwetsbare lokale opslaan van de `terraform.tfstate` op een beheerstation, is er gekozen voor een enterprise-ready **Remote Backend**. Binnen een centrale Azure Storage Account is een beveiligde container genaamd `tfstate-hub-spoke` ingericht. 
+
+Hierdoor wordt de actuele status van de cloud-architectuur centraal beheerd. Dit maakt niet alleen naadloze samenwerking in DevOps-teams mogelijk, maar activeert via Azure Blob Storage ook automatische **State Locking**. Dit voorkomt dat gelijktijdige pipeline-runs elkaars cloudwijzigingen kunnen overschrijven of corrumperen.
+
+![Terraform Backend Init Success](screenshots/36_tf_backend_init_success.PNG)
+
 ### Architecturale verbeteringen in de code:
 
 * **Resource Groep & Tags:** De gehele opzet is netjes ondergebracht in een geautomatiseerde resource groep met de juiste tags via Terraform.
@@ -260,7 +267,6 @@ Na de succesvolle handmatige validatiefase (Proof of Concept) is de volledige Hu
 ![Terraform Firewall Basic Subnets](screenshots/31_tf_firewall_basic_subnets.PNG)
 ![Terraform Route Table Interspoke Fixed](screenshots/32_tf_route_table_interspoke_fixed.PNG)
 ![Terraform Monitoring en DNS Links](screenshots/33_tf_monitoring_and_dns_links.PNG)
-![Terraform Backend Init Success](screenshots/36_tf_backend_init_success.PNG)
 
 ### Bewijsvoering van de Terraform Blauwdruk (Planfase)
 
