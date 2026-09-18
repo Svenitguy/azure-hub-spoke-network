@@ -45,14 +45,14 @@ resource "azurerm_firewall" "fw" {
   # Dataplane: Gekoppeld aan het echte AzureFirewallSubnet
   ip_configuration {
     name                 = "configuration"
-    subnet_id            = azurerm_subnet.firewall.id 
+    subnet_id            = azurerm_subnet.firewall.id
     public_ip_address_id = azurerm_public_ip.fw_pip.id
   }
 
   # Managementplane: Gekoppeld aan het echte AzureFirewallManagementSubnet
   management_ip_configuration {
     name                 = "mgmt-configuration"
-    subnet_id            = azurerm_subnet.firewall_mgmt.id 
+    subnet_id            = azurerm_subnet.firewall_mgmt.id
     public_ip_address_id = azurerm_public_ip.fw_mgmt_pip.id
   }
 }
@@ -103,7 +103,7 @@ resource "azurerm_firewall_policy_rule_collection_group" "app_rules" {
     rule {
       name             = "allow-ubuntu-updates"
       source_addresses = ["10.1.0.0/16", "10.2.0.0/16"]
-      
+
       protocols {
         type = "Http"
         port = 80
@@ -112,7 +112,7 @@ resource "azurerm_firewall_policy_rule_collection_group" "app_rules" {
         type = "Https"
         port = 443
       }
-      
+
       destination_fqdns = ["*.ubuntu.com", "ubuntu.com"]
     }
   }

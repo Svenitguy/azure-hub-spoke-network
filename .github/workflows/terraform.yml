@@ -1,0 +1,55 @@
+name: 'Terraform CI/CD Pipeline'
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: 'Terraform Validation & Deployment'
+    runs-on: ubuntu-latest
+    # Vanaf HIER voeg je deze twee regels toe:
+    defaults:
+      run:
+        working-directory: ./terraform
+    # Tot HIER
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+
+
+    steps:
+    # 1. Haal de code op uit de GitHub repository
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # 2. Installeer Terraform op de GitHub runner
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "1.9.5" # Of de versie die jij lokaal hebt gebruikt
+
+    # 3. Controleer of de Terraform code syntax correct is
+    - name: Terraform Format & Validate
+      run: |
+        terraform fmt -check
+        terraform init -backend=false
+        terraform validate
+
+    # 4. Terraform Plan (Kijken wat er gebouwd gaat worden)
+    - name: Terraform Plan
+      run: |
+        terraform init
+        terraform plan -input=false
+
+    # 5. Terraform Apply (Alleen uitvoeren bij een push op de 'main' branch)
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: terraform apply -auto-approve -input=false

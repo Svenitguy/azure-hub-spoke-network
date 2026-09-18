@@ -11,7 +11,7 @@ Veel startende organisaties maken de fout om workloads in één plat netwerk te 
 * **Schaalbaarheid:** Nieuwe afdelingen of applicaties kunnen eenvoudig als een nieuwe 'Spoke' worden toegevoegd zonder het centrale netwerk te verstoren.
 
 ### Governance, Tenant & Tagging Strategie
-* **Lab-omgeving:** Voor dit project is gekozen voor isolatie op **Resource Group-niveau** (`rg-secure-hubspoke-manual`) within een dedicated test-tenant (`://onmicrosoft.com`). Dit houdt de resources gecentraliseerd en kostenefficiënt.
+* **Lab-omgeving:** Voor dit project is gekozen voor isolatie op **Resource Group-niveau** (`rg-secure-hubspoke-manual`) binnen een dedicated test-tenant (`://onmicrosoft.com`). Dit houdt de resources gecentraliseerd en kostenefficiënt.
 * **Productie-aanbeveling:** In een enterprise-omgeving wordt een **Multi-Subscription strategie** geadviseerd. Hierbij worden de Hub (Centraal beheer), Spoke 1 (Productie) en Spoke 2 (Test) in aparte Azure Subscriptions geplaatst om harde grenzen te creëren voor budgettering (FinOps) en toegangsbeheer (RBAC).
 * **Tagging Standaard:** Om cost-tracking (FinOps) en resource-lifecycle management te garanderen, is een strikte tagging-standaard toegepast op alle resources:
   * `Project` = `Secure-Hub-Spoke`
@@ -44,9 +44,9 @@ Om IP-overlapping (IP overlap) te voorkomen dat subnets elkaar in de weg zitten,
 ## 3. Financiële Analyse & Kostenefficiëntie (FinOps)
 Als Cloud Architect is het cruciaal om niet alleen naar techniek, maar ook naar het budget te kijken. In deze infrastructuurfase is een bewuste **"Firewall-Last" deployment-strategie** toegepast om onnodige labkosten te elimineren:
 
-* **VNet Peering Kosten:** In plaats van duren VPN-gateways tussen elk netwerk te zetten, gebruiken we **VNet Peering** via de peering-wizard. Dit gebruikt het backbone-netwerk van Microsoft. Omdat we binnen dezelfde regio werken (West Europe), betalen we enkel een flinterdun tarief per GB aan dataoverdracht. Zolang er geen VM's actief data verbruiken, blijft de kostprijs **€0,00**.
+* **VNet Peering Kosten:** In plaats van dure VPN-gateways tussen elk netwerk te zetten, gebruiken we **VNet Peering** via de peering-wizard. Dit gebruikt het backbone-netwerk van Microsoft. Omdat we binnen dezelfde regio werken (West Europe), betalen we enkel een flinterdun tarief per GB aan dataoverdracht. Zolang er geen VM's actief data verbruiken, blijft de kostprijs **€0,00**.
 * **Azure Bastion Hub Integration:** In plaats van onveilige publieke IP-adressen op de workloads te plaatsen, is er een centrale Azure Bastion (Basic SKU) uitgerold in de Hub (`AzureBastionSubnet`). Door deze strategische plaatsing kan één enkele Bastion-host via de VNet Peerings veilig verbinding maken met beide Spokes. Om de kosten binnen het lab minimaal te houden, wordt deze service direct na de validatiefase weer ontmanteld (FinOps best practice).
-* **UDR Pre-staging:** De Route Tables (`rt-spoke1-to-hub` en `rt-spoke2-to-hub`) zijn al volledig geconfigureerd en gekoppeld aan de Spokes met het toekomstige Private IP van de Azure Firewall (`10.0.4.4`) als Next Hop. Hierdoor kon de netwerklogica gratis worden klaargezet.
+* **UDR Pre-staging:** De Route Tables (`rt-spoke1-to-hub` en `rt-spoke2-to-hub`) zijn al volledig geconfigureerd hives en gekoppeld aan de Spokes met het toekomstige Private IP van de Azure Firewall (`10.0.4.4`) als Next Hop. Hierdoor kon de netwerklogica gratis worden klaargezet.
 * **Auto-Shutdown Configuration:** Alle test-workloads zijn voorzien van een automatische uitschakeltijd (Auto-shutdown om 6:00 PM / 18:00) om onnodige compute-kosten buiten werktijd te voorkomen.
 * **Isolatie van Workloads:** De virtuele machines zijn uitgerold zonder Publiek IP-adres (No Public IP) op goedkope Standard HDD OS-schijven om de aanvalsoppervlakte (attack surface) te minimaliseren en storage-kosten te drukken.
 
@@ -140,7 +140,7 @@ Voor de centrale logging van de Azure Firewall is er een gecentraliseerde **Log 
 ![Firewall Diagnostics To Law](screenshots/22_firewall_diagnostic_settings_to_law.PNG)
 
 ### Enterprise Private DNS & Auto-Registration
-Om naadloze naamresolutie tussen de Hub spokes en de workloads te garanderen zonder dat deze publiek vindbaar zijn op internet, is een **Azure Private DNS Zone** (`securehub.local`) uitgerold. 
+Om naadloze naamresolutie tussen de Hub spokes and de workloads te garanderen zonder dat deze publiek vindbaar zijn op internet, is een **Azure Private DNS Zone** (`securehub.local`) uitgerold. 
 * De zone is via **Virtual Network Links** gekoppeld aan alle drie de VNets.
 * Voor de Spokes is **Auto-Registration** ingeschakeld. Hierdoor registreren virtuele machines hun private IP-adres direct bij het opstarten binnen de DNS-zone, wat handmatig DNS-beheer elimineert.
 
@@ -260,6 +260,7 @@ Na de succesvolle handmatige validatiefase (Proof of Concept) is de volledige Hu
 ![Terraform Firewall Basic Subnets](screenshots/31_tf_firewall_basic_subnets.PNG)
 ![Terraform Route Table Interspoke Fixed](screenshots/32_tf_route_table_interspoke_fixed.PNG)
 ![Terraform Monitoring en DNS Links](screenshots/33_tf_monitoring_and_dns_links.PNG)
+![Terraform Backend Init Success](screenshots/36_tf_backend_init_success.PNG)
 
 ### Bewijsvoering van de Terraform Blauwdruk (Planfase)
 
@@ -2654,7 +2655,41 @@ Apply complete! Resources: 42 added, 0 changed, 0 destroyed.
 
 ---
 
-## 12. Netwerk Validatie & Security Auditing (KQL Logs)
+## 12. Enterprise CI/CD Automatisering via GitHub Actions
+
+Om een volledige en moderne **GitOps / DevSecOps methodologie** toe te passen, is de Terraform-infrastructuur gekoppeld aan een geautomatiseerde **CI/CD-pipeline via GitHub Actions**. Dit garandeert dat elke wijziging aan de cloudomgeving gecontroleerd, getest en traceerbaar via Git verloopt.
+
+### 1. Veilige Cloudidentiteit & Toegangscontrole (RBAC)
+Conform het *Zero Trust-principe* is er binnen Microsoft Entra ID een dedicated **App Registration / Service Principal** aangemaakt (`github-actions-tf-runner`). Deze digitale identiteit is voorzien van een veilig cryptografisch geheim (Client Secret) om namens GitHub in te kunnen loggen op de cloudomgeving.
+
+![Azure App Registration Overview](screenshots/37_azure_app_registration_overview.PNG)
+![Azure Client Secret Gecreëerd](screenshots/38_azure_client_secret_created.PNG)
+
+Vervolgens is deze identiteit gekoppeld aan de Azure Subscription middels een strikte **Role Assignment (RBAC)** met de rol **Contributor (Inzender)** onder de bevoorrechte administrator-rollen. Hierdoor krijgt de runner exclusief de benodigde bouwrechten op de resources, zonder toegang te krijgen tot het identiteitsbeheer (Entra ID zelf).
+
+![Azure Subscription RBAC Contributor](screenshots/39_azure_subscription_rbac_contributor.PNG)
+
+### 2. GitHub Secrets Kluis & Variabelen Management
+Om te voorkomen dat gevoelige cloudgegevens zoals wachtwoorden en Subscription ID's blootgesteld worden in de openbare codebase, is er gebruikgemaakt van de gecodeerde **GitHub Repository Secrets**. De vier cruciale omgevingsvariabelen zijn veilig opgeslagen in de kluis en worden door GitHub Actions tijdens runtime automatisch gemaskeerd met asterisks (`•••••`).
+
+* `ARM_CLIENT_ID` - De unieke ID van de App Registration.
+* `ARM_CLIENT_SECRET` - De geheime wachtwoord-Value van de runner.
+* `ARM_TENANT_ID` - De unieke Directory ID van de Azure tenant.
+* `ARM_SUBSCRIPTION_ID` - Het ID van de actieve Azure subscription container.
+
+![GitHub Repository Secrets Geconfigureerd](screenshots/40_github_repository_secrets_configured.PNG)
+
+### 3. Declaratieve Pipeline Declaratie (Git Flow & PR-Validatie)
+De volledige lifecycle van de cloudomgeving is vastgelegd in de pipeline-configuratie `.github/workflows/terraform.yml`. De pipeline implementeert een veilige **Git Flow** via een afzonderlijke feature-branch (`feature/automation-cicd`):
+
+![GitHub Actions Workflow YAML Declaratie](screenshots/41_github_actions_workflow_yaml.PNG)
+
+* **Pull Request Validatie (CI):** Zodra een wijziging wordt ingediend richting de `main`-branch, voert GitHub Actions automatisch een syntax-check (`terraform validate`), code-opmaak controle (`terraform fmt`) en een proefdraai (`terraform plan`) uit. Dankzij een ingebouwde conditionele check (`if`) wordt de definitieve uitrol (`apply`) overgeslagen. Dit stelt de engineer in staat om fouten te spotten *voordat* er kosten of security-risico's ontstaan in Azure.
+* **Geautomatiseerde Landing Zone Uitrol (CD):** Pas wanneer de tests slagen en het Pull Request handmatig wordt goedgekeurd en samengevoegd (gemerged) met de `main`-branch, wordt de `terraform apply -auto-approve` stap geactiveerd en schiet de infrastructuur live.
+
+---
+
+## 13. Netwerk Validatie & Security Auditing (KQL Logs)
 
 Om aan te tonen dat de geautomatiseerde landing zone volledig conform het Zero Trust-ontwerp fungeert, zijn er twee validatietesten uitgevoerd:
 
