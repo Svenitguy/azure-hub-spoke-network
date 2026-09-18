@@ -2723,7 +2723,7 @@ Meteen na het veiligstellen van de testresultaten is de volledige infrastructuur
 > [!NOTE]
 > **Metrische Analyse van de Afbraak:**
 > De volledige vernietiging en opschoning van de landing zone duurde in totaal **15 minuten en 40 seconden**. Dit proces duurt langer dan de uitrol omdat Azure de data- en beheerlijnen van de firewall uiterst grondig moet de-provisionen:
-> * `azurerm_firewall.fw`: Volledig ontmanteld na **15 minuten och 5 seconden**.
+> * `azurerm_firewall.fw`: Volledig ontmanteld na **15 minuten en 5 seconden**.
 > * De overige 41 resources (inclusief VNets, subnets en de Resource Group) werden daarna in de resterende 35 seconden parallel opgeruimd.
 
 Hieronder bevindt zich de volledige, gecensureerde log-output van de Terraform-afbraak ter inspectie:
@@ -4471,3 +4471,16 @@ PS C:\terraform>
 </details>
 
 ---
+
+## 14. Conclusie & Architecturale Evaluatie
+
+Dit project demonstreert de volledige evolutie van een Azure cloud-infrastructuur: van een handmatige Proof of Concept (PoC) in de Azure Portal tot een volledig geautomatiseerde, enterprise-ready GitOps-pipeline via HashiCorp Terraform och GitHub Actions. 
+
+Door het consistent toepassen van het **Azure Well-Architected Framework** is er een landing zone gerealiseerd die maximaal scoort op de core pijlers:
+* **Security (Zero Trust):** Er is een harde netwerk-isolatie op subnet-niveau gerealiseerd, gecombineerd met een gecentraliseerde poortwachter-architectuur via Azure Firewall Basic en het elimineren van publieke IP-adressen door het strategisch inzetten van Azure Bastion.
+* **Operational Excellence (Infrastructure as Code & CI/CD):** De netwerkomgeving is 100% reproduceerbaar en auditbaar gemaakt. Menselijke configuratiefouten (zoals de subnet-to-routetable misconfiguratie uit de handmatige fase) worden proactief afgevangen in de geautomatiseerde CI-validatiefase via Pull Requests.
+* **Cost Optimization (FinOps):** Door de implementatie van een proactieve opruimstrategie via pipelines (`terraform destroy`) en het pre-stagen van netwerklogica is aangetoond dat cloud-architecten effectief grip kunnen houden op het lab-budget, waarbij complexe enterprise-omgevingen binnen 30 minuten live kunnen worden getest en opgeruimd voor slechts enkele eurocenten.
+
+### Volgende Evolutiefase (Next Steps):
+1. **State Management:** Migratie van de lokale `terraform.tfstate` naar een beveiligde, gecentraliseerde Azure Storage Account (Blob Storage) met State Locking via een Blob-mechanisme om parallel werken in teams mogelijk te maken.
+2. **Secret Management:** Overstap van statische GitHub Repository Secrets naar dynamische authenticatie via **OIDC (OpenID Connect / Azure Federated Credentials)**, waardoor er geen wachtwoorden (Client Secrets) meer gegenereerd hoeven te worden in Entra ID.
