@@ -46,8 +46,15 @@ resource "azurerm_linux_virtual_machine" "vm_spoke1" {
   resource_group_name             = azurerm_resource_group.rg.name
   size                            = "Standard_B1ls"
   admin_username                  = "azureuser"
-  admin_password                  = "JeVeiligWachtwoord2026!" # Wijzigen in productie!
-  disable_password_authentication = false
+  
+  # DEVSECOPS FIX: Wachtwoordauthenticatie uitgeschakeld en SSH-sleutel verplicht gesteld
+  disable_password_authentication = true
+
+  admin_ssh_key {
+    username   = "azureuser"
+    public_key = var.ssh_public_key
+  }
+
   network_interface_ids           = [azurerm_network_interface.vm_spoke1_nic.id]
   tags                            = var.tags
 
@@ -99,8 +106,15 @@ resource "azurerm_linux_virtual_machine" "vm_spoke2" {
   resource_group_name             = azurerm_resource_group.rg.name
   size                            = "Standard_B1ls"
   admin_username                  = "azureuser"
-  admin_password                  = "JeVeiligWachtwoord2026!" # Wijzigen in productie!
-  disable_password_authentication = false
+  
+  # DEVSECOPS FIX: Wachtwoordauthenticatie uitgeschakeld en SSH-sleutel verplicht gesteld
+  disable_password_authentication = true
+
+  admin_ssh_key {
+    username   = "azureuser"
+    public_key = var.ssh_public_key
+  }
+
   network_interface_ids           = [azurerm_network_interface.vm_spoke2_nic.id]
   tags                            = var.tags
 
