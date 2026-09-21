@@ -55,7 +55,7 @@ jobs:
         scan-type: 'config'
         scan-ref: './terraform' # Wijst Trivy direct naar jouw Terraform map
         hide-progress: false
-        format: 'cli'
+        format: 'table' # Aangepast van 'cli' naar 'table' voor compatibiliteit!
         exit-code: '1' # De pipeline stopt direct als er een high/critical kwetsbaarheid is!
         severity: 'HIGH,CRITICAL'
 
