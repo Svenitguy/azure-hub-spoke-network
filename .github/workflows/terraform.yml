@@ -2,7 +2,7 @@ name: 'Terraform CI/CD Pipeline'
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "feature/secure-oidc-cicd" ] # We voegen hier tijdelijk je test-branch toe!
     paths-ignore:
       - 'README.md'
       - 'screenshots/**'
@@ -12,51 +12,61 @@ on:
       - 'README.md'
       - 'screenshots/**'
 
+# VERPLICHT VOOR OIDC: Dit geeft GitHub toestemming om een beveiligd inlogtoken te claimen bij Azure
 permissions:
+  id-token: write
   contents: read
-
 
 jobs:
   terraform:
     name: 'Terraform Validation & Deployment'
     runs-on: ubuntu-latest
-    # Vanaf HIER voeg je deze twee regels toe:
+    
     defaults:
       run:
         working-directory: ./terraform
-    # Tot HIER
+
+    # De "Pro" methode: ARM_CLIENT_SECRET is hier permanent verwijderd!
     env:
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
-      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
-
+      ARM_USE_OIDC: true
 
     steps:
-    # 1. Haal de code op uit de GitHub repository
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # 2. Installeer Terraform op de GitHub runner
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
-        terraform_version: "1.9.5" # Of de versie die jij lokaal hebt gebruikt
+        terraform_version: "1.9.5"
 
-    # 3. Controleer of de Terraform code syntax correct is
     - name: Terraform Format & Validate
       run: |
         terraform fmt -check
         terraform init -backend=false
         terraform validate
 
-    # 4. Terraform Plan (Kijken wat er gebouwd gaat worden)
-    - name: Terraform Plan
-      run: |
-        terraform init
-        terraform plan -input=false
+    # DEVSECOPS: We scannen je hub-spoke netwerkcode op beveiligingslekken vóór de planfase
+    - name: Run Trivy Security Scanner (IAC)
+      uses: aquasecurity/trivy-action@v0.28.0
+      with:
+        scan-type: 'config'
+        hide-progress: false
+        format: 'cli'
+        exit-code: '1' # De pipeline stopt direct als er een high/critical kwetsbaarheid is!
+        severity: 'HIGH,CRITICAL'
 
-    # 5. Terraform Apply (Alleen uitvoeren bij een push op de 'main' branch)
+    - name: Terraform Init Remote
+      run: terraform init
+
+    # We slaan het planbestand op zodat we 100% consistentie houden
+    - name: Terraform Plan
+      run: terraform plan -input=false -out=tfplan
+
+    # De echte Pro-beveiliging: Alleen apply uitvoeren als we écht op main pushen. 
+    # Op jouw test-branch stopt de pipeline dus automatisch na de 'Plan' stap!
     - name: Terraform Apply
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      run: terraform destroy -auto-approve -input=false
+      run: terraform apply -auto-approve tfplan
