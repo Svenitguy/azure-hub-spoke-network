@@ -1,4 +1,12 @@
 # =====================================================================
+# 0. AUTOMATISCHE CLOUD-NATIVE SSH SLEUTEL GENERATIE (DevSecOps)
+# =====================================================================
+resource "tls_private_key" "vm_ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+# =====================================================================
 # 1. AZURE BASTION INFRASTRUCTUUR
 # =====================================================================
 resource "azurerm_public_ip" "bastion_pip" {
@@ -47,12 +55,13 @@ resource "azurerm_linux_virtual_machine" "vm_spoke1" {
   size                = "Standard_B1ls"
   admin_username      = "azureuser"
 
-  # DEVSECOPS FIX: Wachtwoordauthenticatie uitgeschakeld en SSH-sleutel verplicht gesteld
+  # DEVSECOPS FIX: Wachtwoordauthenticatie uitgeschakeld
   disable_password_authentication = true
 
+  # PRO AUTOMATISERING: Verwijst nu direct naar de cloud-native resource
   admin_ssh_key {
     username   = "azureuser"
-    public_key = var.ssh_public_key
+    public_key = tls_private_key.vm_ssh_key.public_key_openssh
   }
 
   network_interface_ids = [azurerm_network_interface.vm_spoke1_nic.id]
@@ -107,12 +116,13 @@ resource "azurerm_linux_virtual_machine" "vm_spoke2" {
   size                = "Standard_B1ls"
   admin_username      = "azureuser"
 
-  # DEVSECOPS FIX: Wachtwoordauthenticatie uitgeschakeld en SSH-sleutel verplicht gesteld
+  # DEVSECOPS FIX: Wachtwoordauthenticatie uitgeschakeld
   disable_password_authentication = true
 
+  # PRO AUTOMATISERING: Verwijst nu direct naar de cloud-native resource
   admin_ssh_key {
     username   = "azureuser"
-    public_key = var.ssh_public_key
+    public_key = tls_private_key.vm_ssh_key.public_key_openssh
   }
 
   network_interface_ids = [azurerm_network_interface.vm_spoke2_nic.id]
