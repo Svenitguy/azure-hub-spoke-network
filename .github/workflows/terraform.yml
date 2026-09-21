@@ -50,13 +50,15 @@ jobs:
 
     # DEVSECOPS: We scannen je hub-spoke netwerkcode op beveiligingslekken vóór de planfase
     - name: Run Trivy Security Scanner (IAC)
-      uses: aquasecurity/trivy-action@v0.28.0
+      uses: aquasecurity/trivy-action@master
       with:
         scan-type: 'config'
+        scan-ref: './terraform' # Wijst Trivy direct naar jouw Terraform map
         hide-progress: false
         format: 'cli'
         exit-code: '1' # De pipeline stopt direct als er een high/critical kwetsbaarheid is!
         severity: 'HIGH,CRITICAL'
+
 
     - name: Terraform Init Remote
       run: terraform init
