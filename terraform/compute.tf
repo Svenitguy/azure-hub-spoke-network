@@ -41,12 +41,12 @@ resource "azurerm_network_interface" "vm_spoke1_nic" {
 }
 
 resource "azurerm_linux_virtual_machine" "vm_spoke1" {
-  name                            = "vm-spoke1-prod"
-  location                        = azurerm_resource_group.rg.location
-  resource_group_name             = azurerm_resource_group.rg.name
-  size                            = "Standard_B1ls"
-  admin_username                  = "azureuser"
-  
+  name                = "vm-spoke1-prod"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  size                = "Standard_B1ls"
+  admin_username      = "azureuser"
+
   # DEVSECOPS FIX: Wachtwoordauthenticatie uitgeschakeld en SSH-sleutel verplicht gesteld
   disable_password_authentication = true
 
@@ -55,8 +55,8 @@ resource "azurerm_linux_virtual_machine" "vm_spoke1" {
     public_key = var.ssh_public_key
   }
 
-  network_interface_ids           = [azurerm_network_interface.vm_spoke1_nic.id]
-  tags                            = var.tags
+  network_interface_ids = [azurerm_network_interface.vm_spoke1_nic.id]
+  tags                  = var.tags
 
   os_disk {
     caching              = "ReadWrite"
@@ -101,12 +101,12 @@ resource "azurerm_network_interface" "vm_spoke2_nic" {
 }
 
 resource "azurerm_linux_virtual_machine" "vm_spoke2" {
-  name                            = "vm-spoke2-test"
-  location                        = azurerm_resource_group.rg.location
-  resource_group_name             = azurerm_resource_group.rg.name
-  size                            = "Standard_B1ls"
-  admin_username                  = "azureuser"
-  
+  name                = "vm-spoke2-test"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  size                = "Standard_B1ls"
+  admin_username      = "azureuser"
+
   # DEVSECOPS FIX: Wachtwoordauthenticatie uitgeschakeld en SSH-sleutel verplicht gesteld
   disable_password_authentication = true
 
@@ -115,8 +115,8 @@ resource "azurerm_linux_virtual_machine" "vm_spoke2" {
     public_key = var.ssh_public_key
   }
 
-  network_interface_ids           = [azurerm_network_interface.vm_spoke2_nic.id]
-  tags                            = var.tags
+  network_interface_ids = [azurerm_network_interface.vm_spoke2_nic.id]
+  tags                  = var.tags
 
   os_disk {
     caching              = "ReadWrite"
