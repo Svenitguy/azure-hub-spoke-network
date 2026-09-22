@@ -4490,3 +4490,37 @@ Door het consistent toepassen van het **Azure Well-Architected Framework** is er
 ### Volgende Evolutiefase (Next Steps):
 1. **State Management:** Migratie van de lokale `terraform.tfstate` naar een beveiligde, gecentraliseerde Azure Storage Account (Blob Storage) met State Locking via een Blob-mechanisme om parallel werken in teams mogelijk te maken.
 2. **Secret Management:** Overstap van statische GitHub Repository Secrets naar dynamische authenticatie via **OIDC (OpenID Connect / Azure Federated Credentials)**, waardoor er geen wachtwoorden (Client Secrets) meer gegenereerd hoeven te worden in Entra ID.
+
+---
+
+## 15. DevSecOps & OIDC (OpenID Connect) Migratie
+
+Om de beveiliging van de landing zone naar een enterprise-niveau te tillen, is het project uitgebreid met **Shift-Left Security (DevSecOps)** en is er gemigreerd naar een volledig **geheimenloze authenticatie-architectuur**.
+
+### 🔐 15.1 Geheimenloze Authenticatie via Microsoft Entra ID (OIDC)
+In plaats van statische, kwetsbare `ARM_CLIENT_SECRET` sleutels in GitHub op te slaan, maakt de pipeline nu gebruik van **OpenID Connect (OIDC)** via **Azure Workload Identity Federation**. 
+
+*   **Federated Credentials:** Binnen Microsoft Entra ID zijn specifieke vertrouwenrelaties (trusts) opgezet die de GitHub Actions runner exclusief autoriseren op basis van cryptografische tokens.
+*   **Context Isolation:** Er zijn twee afzonderlijke credentials ingericht om te voldoen aan het *Principle of Least Privilege*:
+    1.  `feature/secure-oidc-cicd` (Branch scope) voor actieve ontwikkelfases.
+    2.  `pull_request` context scope voor de validatie van merge-acties richting de hoofd-branch.
+
+![Azure OIDC Setup](screenshots/42_azure_oidc_federated_credential.PNG)
+![Azure Federated Overview](screenshots/48_azure_entra_federated_credentials_overview.PNG)
+
+### 🛡️ 15.2 Shift-Left Security met Aqua Security Trivy
+Er is een automatische kwetsbaarhedenscan geïntegreerd in de Pull Request-fase (CI). Elke wijziging in de Terraform-code wordt proactief geaudit op misconfiguraties conform de CIS Azure Benchmarks alvorens er een plan mag worden gegenereerd.
+
+*   **Geleerde Les (Incident AZU-0039):** Tijdens de initiële proefdraai blokkeerde de Trivy linter de pipeline hard wegens twee **HIGH severity** security-risico's in `compute.tf`. De Linux VM's stonden standaard geconfigureerd met wachtwoordauthenticatie.
+*   **Mitigatie (Cloud-Native TLS):** De hardcoded wachtwoorden zijn permanent verwijderd. Er is een automatische sleutelgeneratie geïmplementeerd via de `tls` provider (`tls_private_key`). Terraform genereert nu zelfstandig unieke, onkraakbare 4096-bits SSH public keys in het cloud-geheugen en koppelt deze aan de VM's. Wachtwoordauthenticatie is hardhandig uitgeschakeld (`disable_password_authentication = true`).
+
+![Trivy Security Failure](screenshots/44_github_actions_trivy_security_scan.PNG)
+![Trivy Security Success & Plan](screenshots/46_github_actions_pr_plan_success.PNG)
+
+### 💼 15.3 Enterprise Governance & FinOps Guardrails
+Om ongewenste cloud-kosten te voorkomen na het samenvoegen van de code, is de `Terraform Apply` stap op de `main`-branch bewust voorzien van een **FinOps freeze guardrail**. De pipeline valideert de volledige code, controleert de security en genereert het plan, maar voert geen daadwerkelijke mutaties uit in Azure zonder expliciete handmatige interventie.
+
+![Main Branch Safe Apply](screenshots/49_github_actions_main_branch_frozen_apply.PNG)
+![Statische Secrets Intrekking](screenshots/50_azure_client_secret_revoked.PNG)
+
+---
