@@ -2,7 +2,7 @@ name: 'Terraform CI/CD Pipeline'
 
 on:
   push:
-    branches: [ "main", "feature/secure-oidc-cicd" ] # We voegen hier tijdelijk je test-branch toe!
+    branches: [ "main", "feature/secure-oidc-cicd" ]
     paths-ignore:
       - 'README.md'
       - 'screenshots/**'
@@ -12,7 +12,6 @@ on:
       - 'README.md'
       - 'screenshots/**'
 
-# VERPLICHT VOOR OIDC: Dit geeft GitHub toestemming om een beveiligd inlogtoken te claimen bij Azure
 permissions:
   id-token: write
   contents: read
@@ -26,7 +25,6 @@ jobs:
       run:
         working-directory: ./terraform
 
-    # De "Pro" methode: ARM_CLIENT_SECRET is hier permanent verwijderd!
     env:
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
@@ -48,27 +46,23 @@ jobs:
         terraform init -backend=false
         terraform validate
 
-    # DEVSECOPS: We scannen je hub-spoke netwerkcode op beveiligingslekken vóór de planfase
     - name: Run Trivy Security Scanner (IAC)
       uses: aquasecurity/trivy-action@master
       with:
         scan-type: 'config'
-        scan-ref: './terraform' # Wijst Trivy direct naar jouw Terraform map
+        scan-ref: './terraform'
         hide-progress: false
-        format: 'table' # Aangepast van 'cli' naar 'table' voor compatibiliteit!
-        exit-code: '1' # De pipeline stopt direct als er een high/critical kwetsbaarheid is!
+        format: 'table'
+        exit-code: '1'
         severity: 'HIGH,CRITICAL'
-
 
     - name: Terraform Init Remote
       run: terraform init
 
-    # We slaan het planbestand op zodat we 100% consistentie houden
     - name: Terraform Plan
       run: terraform plan -input=false -out=tfplan
 
-    # De echte Pro-beveiliging: Alleen apply uitvoeren als we écht op main pushen. 
-    # Op jouw test-branch stopt de pipeline dus automatisch na de 'Plan' stap!
-    - name: Terraform Apply
+    # FINOPS GUARDRAIL: Wijzigingen op main staan hier tijdelijk bevroren om ongewenste Azure kosten te voorkomen.
+    - name: Terraform Apply (Frozen)
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      run: terraform apply -auto-approve tfplan
+      run: echo "Uitvoering op main staat bewust bevroren. Er worden geen Azure resources aangemaakt of vernietigd."
