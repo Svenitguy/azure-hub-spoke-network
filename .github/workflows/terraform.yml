@@ -17,8 +17,11 @@ permissions:
   contents: read
 
 jobs:
-  terraform:
-    name: 'Terraform Validation & Deployment'
+  # =====================================================================
+  # JOB 1: CONTINUOUS INTEGRATION (VALIDATIE & PLAN)
+  # =====================================================================
+  build_plan:
+    name: 'Terraform Validation & Plan'
     runs-on: ubuntu-latest
     
     defaults:
@@ -62,8 +65,54 @@ jobs:
     - name: Terraform Plan
       run: terraform plan -input=false -out=tfplan
 
-    # ENTERPRISE CD STAGE: Gekoppeld aan de zojuist gemaakte GitHub Environment met verplichte handmatige goedkeuring!
-    - name: Terraform Apply
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      environment: Production # <--- Dit verbindt de pipeline direct met jouw Production-kluis en poortwachter!
+    # Bewaar het gegenereerde plan-bestand tijdelijk binnen GitHub zodat Job 2 het kan hergebruiken
+    - name: Upload Terraform Plan Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: tfplan
+        path: ./terraform/tfplan
+        retention-days: 1
+
+  # =====================================================================
+  # JOB 2: CONTINUOUS DEPLOYMENT (HANDMATIGE APPOVAL & APPLY)
+  # =====================================================================
+  deploy_apply:
+    name: 'Terraform Enterprise Deployment'
+    needs: build_plan # Zorgt ervoor dat de deployment pas start als de plan-fase succesvol is afgerond!
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' # Alleen uitvoeren bij een push/merge op main
+    runs-on: ubuntu-latest
+    
+    # DIT IS DE CORRECTE PRO METHODE: Gekoppeld op Job-niveau!
+    environment: Production 
+
+    defaults:
+      run:
+        working-directory: ./terraform
+
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      ARM_USE_OIDC: true
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "1.9.5"
+
+    # Haal het goedgekeurde plan-bestand op dat we in Job 1 hebben veiliggesteld
+    - name: Download Terraform Plan Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: tfplan
+        path: ./terraform
+
+    - name: Terraform Init Remote
+      run: terraform init
+
+    - name: Terraform Apply Enterprise Deployment
       run: terraform apply -auto-approve tfplan
