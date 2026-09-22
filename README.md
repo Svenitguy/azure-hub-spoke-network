@@ -4498,15 +4498,13 @@ Door het consistent toepassen van het **Azure Well-Architected Framework** is er
 Om de beveiliging van de landing zone naar een enterprise-niveau te tillen, is het project uitgebreid met **Shift-Left Security (DevSecOps)** en is er gemigreerd naar een volledig **geheimenloze authenticatie-architectuur**.
 
 ### 🔐 15.1 Geheimenloze Authenticatie via Microsoft Entra ID (OIDC)
-In plaats van statische, kwetsbare `ARM_CLIENT_SECRET` sleutels in GitHub op te slaan, maakt de pipeline nu gebruik van **OpenID Connect (OIDC)** via **Azure Workload Identity Federation**. 
+In plaats van statische, kwetsbare `ARM_CLIENT_SECRET` sleutels in GitHub op te slaan, maakt de pipeline nu gebruik van **OpenID Connect (OIDC)** via **Azure Workload Identity Federation**.
 
 *   **Federated Credentials:** Binnen Microsoft Entra ID zijn specifieke vertrouwenrelaties (trusts) opgezet die de GitHub Actions runner exclusief autoriseren op basis van cryptografische tokens.
-*   **Context Isolation:** Er zijn twee afzonderlijke credentials ingericht om te voldoen aan het *Principle of Least Privilege*:
-    1.  `feature/secure-oidc-cicd` (Branch scope) voor actieve ontwikkelfases.
-    2.  `pull_request` context scope voor de validatie van merge-acties richting de hoofd-branch.
+*   **Context Isolation & PR Handshake:** Er zijn afzonderlijke credentials ingericht om te voldoen aan het *Principle of Least Privilege*. Tijdens de merge-fase is de credential-scope geoptimaliseerd naar het type **Pull request** om de geautomatiseerde PR-checks van GitHub Actions naadloos te valideren binnen Entra ID.
 
-![Azure OIDC Setup](screenshots/42_azure_oidc_federated_credential.PNG)
-![Azure Federated Overview](screenshots/48_azure_entra_federated_credentials_overview.PNG)
+![Azure OIDC Setup](screenshots/43_azure_oidc_federated_credential.PNG)
+![Azure Federated Overview](screenshots/45_azure_entra_federated_credentials_overview.PNG)
 
 ### 🛡️ 15.2 Shift-Left Security met Aqua Security Trivy
 Er is een automatische kwetsbaarhedenscan geïntegreerd in de Pull Request-fase (CI). Elke wijziging in de Terraform-code wordt proactief geaudit op misconfiguraties conform de CIS Azure Benchmarks alvorens er een plan mag worden gegenereerd.
@@ -4514,13 +4512,12 @@ Er is een automatische kwetsbaarhedenscan geïntegreerd in de Pull Request-fase 
 *   **Geleerde Les (Incident AZU-0039):** Tijdens de initiële proefdraai blokkeerde de Trivy linter de pipeline hard wegens twee **HIGH severity** security-risico's in `compute.tf`. De Linux VM's stonden standaard geconfigureerd met wachtwoordauthenticatie.
 *   **Mitigatie (Cloud-Native TLS):** De hardcoded wachtwoorden zijn permanent verwijderd. Er is een automatische sleutelgeneratie geïmplementeerd via de `tls` provider (`tls_private_key`). Terraform genereert nu zelfstandig unieke, onkraakbare 4096-bits SSH public keys in het cloud-geheugen en koppelt deze aan de VM's. Wachtwoordauthenticatie is hardhandig uitgeschakeld (`disable_password_authentication = true`).
 
-![Trivy Security Failure](screenshots/44_github_actions_trivy_security_scan.PNG)
-![Trivy Security Success & Plan](screenshots/46_github_actions_pr_plan_success.PNG)
+![Trivy Security Failure](screenshots/42_github_actions_trivy_security_scan.PNG)
+![Trivy Security Success & Plan](screenshots/44_github_actions_pr_plan_success.PNG)
 
 ### 💼 15.3 Enterprise Governance & FinOps Guardrails
-Om ongewenste cloud-kosten te voorkomen na het samenvoegen van de code, is de `Terraform Apply` stap op de `main`-branch bewust voorzien van een **FinOps freeze guardrail**. De pipeline valideert de volledige code, controleert de security en genereert het plan, maar voert geen daadwerkelijke mutaties uit in Azure zonder expliciete handmatige interventie.
+Om ongewenste cloud-kosten te voorkomen na het samenvoegen van de code, is de `Terraform Apply` stap op de `main`-branch bewust voorzien van een **FinOps freeze guardrail**. De pipeline valideert de volledige code, controleert de security en genereert het plan, maar voert geen daadwerkelijke mutaties uit in Azure zonder expliciete handmatige interventie. 
 
-![Main Branch Safe Apply](screenshots/49_github_actions_main_branch_frozen_apply.PNG)
-![Statische Secrets Intrekking](screenshots/50_azure_client_secret_revoked.PNG)
+Nadat het OIDC-systeem succesvol is opgeleverd, is de oude Client Secret definitief ingetrokken om de **Zero Trust** status te bereiken.
 
----
+![Statische Secrets Intrekking](screenshots/46_azure_client_secret_revoked.PNG)
