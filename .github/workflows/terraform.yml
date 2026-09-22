@@ -62,7 +62,8 @@ jobs:
     - name: Terraform Plan
       run: terraform plan -input=false -out=tfplan
 
-    # FINOPS GUARDRAIL: Wijzigingen op main staan hier tijdelijk bevroren om ongewenste Azure kosten te voorkomen.
-    - name: Terraform Apply (Frozen)
+    # ENTERPRISE CD STAGE: Gekoppeld aan de zojuist gemaakte GitHub Environment met verplichte handmatige goedkeuring!
+    - name: Terraform Apply
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      run: echo "Uitvoering op main staat bewust bevroren. Er worden geen Azure resources aangemaakt of vernietigd."
+      environment: Production # <--- Dit verbindt de pipeline direct met jouw Production-kluis en poortwachter!
+      run: terraform apply -auto-approve tfplan
