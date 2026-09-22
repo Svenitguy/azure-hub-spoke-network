@@ -4487,10 +4487,6 @@ Door het consistent toepassen van het **Azure Well-Architected Framework** is er
 * **Operational Excellence (Infrastructure as Code & CI/CD):** De netwerkomgeving is 100% reproduceerbaar en auditbaar gemaakt. Menselijke configuratiefouten (zoals de subnet-to-routetable misconfiguratie uit de handmatige fase) worden proactief afgevangen in de geautomatiseerde CI-validatiefase via Pull Requests.
 * **Cost Optimization (FinOps):** Door de implementatie van een proactieve opruimstrategie via pipelines (`terraform destroy`) en het pre-stagen van netwerklogica is aangetoond dat cloud-architecten effectief grip kunnen houden op het lab-budget, waarbij complexe enterprise-omgevingen binnen 30 minuten live kunnen worden getest en opgeruimd voor slechts enkele eurocenten.
 
-### Volgende Evolutiefase (Next Steps):
-1. **State Management:** Migratie van de lokale `terraform.tfstate` naar een beveiligde, gecentraliseerde Azure Storage Account (Blob Storage) met State Locking via een Blob-mechanisme om parallel werken in teams mogelijk te maken.
-2. **Secret Management:** Overstap van statische GitHub Repository Secrets naar dynamische authenticatie via **OIDC (OpenID Connect / Azure Federated Credentials)**, waardoor er geen wachtwoorden (Client Secrets) meer gegenereerd hoeven te worden in Entra ID.
-
 ---
 
 ## 15. DevSecOps & OIDC (OpenID Connect) Migratie
