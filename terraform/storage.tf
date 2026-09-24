@@ -1,15 +1,21 @@
 # =====================================================================
-# 1. ENTERPRISE SECURE STORAGE ACCOUNT
+# 1. ENTERPRISE SECURE STORAGE ACCOUNT (Trivy AZU-0012 Compliant)
 # =====================================================================
 resource "azurerm_storage_account" "secure_storage" {
-  name                     = "sthubspokesharedsv001" # Wereldwijd uniek, max 24 tekens, kleine letters/cijfers
+  name                     = "sthubspokesharedsv001"
   resource_group_name      = azurerm_resource_group.rg.name
   location                 = azurerm_resource_group.rg.location
   account_tier             = "Standard"
-  account_replication_type = "LRS" # FinOps: Voorkomt dubbele replicatiekosten in het lab
+  account_replication_type = "LRS"
 
-  # ZERO TRUST: De publieke deur naar het internet direct hardhandig sluiten
+  # ZERO TRUST STAP 1: Openbare netwerktoegang op platformniveau uitschakelen
   public_network_access_enabled = false
+
+  # ZERO TRUST STAP 2 (FIX AZU-0012): Interne firewall-engine initialiseren op DENY
+  network_rules {
+    default_action = "Deny"
+    bypass         = ["Metrics", "Logging"] # Staat interne Azure services toe om logs te schrijven
+  }
 
   tags = var.tags
 }
