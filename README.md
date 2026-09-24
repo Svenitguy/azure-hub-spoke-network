@@ -27,6 +27,8 @@ Veel startende organisaties maken de fout om workloads in één plat netwerk te 
 ## 2. Netwerk- & IP-Adresseringsplan
 Om IP-overlapping (IP overlap) te voorkomen dat subnets elkaar in de weg zitten, is het volgende schema ontworpen en volledig geïmplementeerd:
 
+### Netwerkinfrastructuur (VNets & Subnetten)
+
 | Netwerk (Resource) | IP Range (CIDR) | Subnet Naam | Subnet Range | Doel / Functie |
 | :--- | :--- | :--- | :--- | :--- |
 | **vnet-hub-prod** | `10.0.0.0/16` | `AzureBastionSubnet` <br> `sn-hub-mgmt` <br> `AzureFirewallSubnet` <br> `AzureFirewallManagementSubnet` | `10.0.2.0/26` <br> `10.0.3.0/24` <br> `10.0.4.0/26` <br> `10.0.4.64/26` | Gereserveerd voor Azure Bastion (Basic SKU) <br> Beheer / Jumpbox subnet <br> Azure Firewall Dataplane <br> Verplicht beheer-subnet voor Azure Firewall Basic |
@@ -61,7 +63,17 @@ Hieronder staat de visuele weergave van onze netwerkinfrastructuur. Dit diagram 
 
 ```mermaid
 graph TD
-    subgraph Azure Cloud Environment
+    subgraph GitHub_Platform [GitHub DevOps Perimeter]
+        GHA[GitHub Actions Pipeline]
+        SECRETS[GitHub Repository Secrets]
+    end
+
+    subgraph Azure_Cloud_Environment [Azure Cloud Environment]
+        subgraph IDENTITY [Identity & State Management]
+            OIDC[[Microsoft Entra ID: OIDC Workload Identity]]
+            ST_BACKEND[(Storage Account: tfstatesveniac <br> Container: tfstate-hub-spoke <br> Key: hub-spoke.terraform.tfstate)]
+        end
+
         subgraph HUB_VNet [Hub VNet: 10.0.0.0/16]
             FW[Azure Firewall Basic: 10.0.4.4]
             FWMGMT[Firewall Management Subnet: 10.0.4.64/26]
@@ -71,35 +83,57 @@ graph TD
 
         subgraph SPOKE_1 [Spoke 1 VNet: 10.1.0.0/16]
             PROD_VM[Prod Workload: vm-spoke1-prod]
+            PE_BLOB[Private Endpoint: pe-storage-prod]
         end
 
         subgraph SPOKE_2 [Spoke 2 VNet: 10.2.0.0/16]
             TEST_VM[Test Workload: vm-spoke2-test]
         end
+
+        subgraph DATA_PERIMETER [Secure Data & BCDR Layer]
+            ST_DATA[(Storage Account: sthubspokesharedsv001 <br> Blob: raw-data <br> File Share: shared-files)]
+            RSV[Recovery Services Vault <br> policy-daily-fileshare-backup]
+        end
         
         LAW[(Log Analytics Workspace: law-secure-hubspoke-prod)]
-        DNS[[Private DNS Zone: securehub.local]]
+        DNS_NET[[Private DNS Zone: securehub.local]]
+        DNS_BLOB[[Private DNS Zone: privatelink.blob.core.windows.net]]
     end
+
+    %% CI/CD & OIDC Handshake Flow
+    GHA -->|1. OIDC Token Exchange| OIDC
+    OIDC -->|2. Passwordless Auth| Azure_Cloud_Environment
+    GHA -->|3. State Lock Request| ST_BACKEND
+    SECRETS -.->|Masked Variables| GHA
 
     %% Connections via VNet Peering
     PROD_VM <-->|VNet Peering| HUB_VNet
     TEST_VM <-->|VNet Peering| HUB_VNet
 
-    %% Routing via Firewall Pre-staging
+    %% Routing via Firewall
     PROD_VM -->|UDR: 0.0.0.0/0| FW
     TEST_VM -->|UDR: 0.0.0.0/0| FW
     
-    %% DNS Links & Auto-Registration
-    DNS <-->|VNet Link| HUB_VNet
-    DNS <-->|VNet Link & Auto-Reg| SPOKE_1
-    DNS <-->|VNet Link & Auto-Reg| SPOKE_2
+    %% Private Data Link Path
+    PROD_VM <-->|4. Private Link Path| PE_BLOB
+    PE_BLOB <-->|Isolated Data Access| ST_DATA
+    
+    %% BCDR Protection Path
+    RSV -->|5. Daily Snapshot Backup| ST_DATA
 
-    %% Style
-    style HUB_VNet fill:#f5f5f5,stroke:#333,stroke-width:2px
+    %% DNS Links & Auto-Registration
+    DNS_NET <-->|VNet Link| HUB_VNet
+    DNS_NET <-->|VNet Link & Auto-Reg| SPOKE_1
+    DNS_NET <-->|VNet Link & Auto-Reg| SPOKE_2
+    DNS_BLOB <-->|VNet Link| HUB_VNet
+    DNS_BLOB <-->|VNet Link| SPOKE_1
+
+    %% Style Rules
+    style GitHub_Platform fill:#f4f4f5,stroke:#24292e,stroke-width:2px
+    style HUB_VNet fill:#f5f5f5,stroke:#333,stroke-width:1px
     style SPOKE_1 fill:#e6f2ff,stroke:#0066cc,stroke-width:1px
-    style SPOKE_2 fill:#f9f2ec,stroke:#b35900,stroke-width:1px
-    style LAW fill:#e1f5fe,stroke:#0288d1,stroke-width:1px
-    style DNS fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
+    style DATA_PERIMETER fill:#fff7ed,stroke:#c2410c,stroke-width:2px
+    style IDENTITY fill:#f0fdf4,stroke:#16a34a,stroke-width:1px
 ```
 
 ### Geconfigureerde netwerkverbindingen (VNet Peerings):
@@ -4518,3 +4552,55 @@ Nadat het OIDC-systeem succesvol is opgeleverd, is de oude Client Secret definit
 
 ![Main Branch Multi-Stage Gatekeeper](screenshots/47_github_actions_main_branch_frozen_apply.PNG)
 ![Statische Secrets Intrekking](screenshots/46_azure_client_secret_revoked.PNG)
+
+---
+
+## 16. Uitbreiding: Enterprise Secure Storage & Data Protection (Azure Storage & BCDR)
+
+Na de succesvolle netwerkinrichting is de Landing Zone modulair uitgebreid met een zwaar beveiligd **Enterprise Data Protection Framework**. In plaats van data openlijk bloot te stellen aan het internet, is er een opslag- en back-upomgeving gecodeerd die volledig geïsoleerd is binnen de private perimeter van de Spokes.
+
+### 🔐 16.1 Modulaire & Private Enterprise Opslaglaag
+Binnen de Resource Group is een centrale Storage Account (`sthubspokesharedsv001`) uitgerold die twee cruciale cloud-datastructuren combineert:
+*   **Azure Blob Container (`raw-data`):** Bestemd voor ongestructureerde NoSQL-applicatiedata en back-uplogs.
+*   **Azure File Share (`shared-files`):** Een centrale netwerkschijf (SMB protocol) met een harde FinOps-quota van 50 GB voor veilige interne bestandsuitwisseling.
+
+**Zero Trust Netwerkinsluiting:** De opslagaccount weigert standaard alle publieke internetverbindingen. Er is een **Private Endpoint** (`pe-storage-prod`) geïmplementeerd dat de opslaglaag exclusief koppelt aan het subnet van de applicatielaag (`sn-spoke1-apps`). 
+
+Naamresolutie verloopt via een dedicated **Azure Private DNS Zone** (`privatelink.blob.core.windows.net`), gekoppeld aan de VNets. Hierdoor resolvert de FQDN van de storage account binnen het interne netwerk direct naar een privaat IP-adres (**10.1.1.X**). Dataverkeer verlaat de interne Microsoft-backbone dus nooit.
+
+---
+
+## 17. Business Continuity, Disaster Recovery (BCDR) & Ransomware Protection
+
+Om te voldoen aan enterprise-compliance en data-loss te voorkomen, is de infrastructuur in Terraform uitgebreid met een gelaagde back-up- en herstelomgeving:
+
+*   **Centralized File Share Backup:** Er is een `Recovery Services Vault` (`rsv-secure-landingzone-prod`) uitgerold met een geautomatiseerd back-upbeleid. De Azure File Share wordt dagelijks volautomatisch geback-upt met een retentietermijn van 30 dagen voor herstel bij calamiteiten.
+*   **WORM Ransomware Protection (Immutability):** De NoSQL container `raw-data` is voorzien van een wettelijk bindend `immutability_policy` van 7 dagen. Gedurende deze periode is het overschrijven, wijzigen of vernietigen van bestanden technisch onmogelijk. Dit biedt 100% bescherming tegen ransomware-aanvallen die proberen historische logs of back-ups onklaar te maken.
+
+---
+
+## 18. Aanvullende Lessons Learned & DevSecOps Cloud Gotchas
+
+Bij de integratie van de opslag- en back-uplaag via de OIDC-pipeline kwamen drie cruciale platformmechanismen aan het licht:
+
+1. **OIDC Multi-Branch Remote Backend Loop:** Tijdens de validatie van de nieuwe feature-branch liep de `terraform init` stap initieel vast in een oneindige loop. **Geleerde les:** OIDC Workload Identity Federation is uiterst branch-specifiek. Omdat Terraform bij de initialisatie de state-lock moet aanvragen op de Azure Storage backend, eist Microsoft Entra ID een expliciete **Federated Credential** die gekoppeld is aan de exacte branchnaam (`feature/secure-storage-bcdr`). Het toevoegen van deze credential in Entra ID loste de autorisatie-blokkade direct op.
+2. **Trivy Firewall Engine Verification (Mishap AZU-0012 & AZU-0010):** De Aqua Security Trivy static code-analyse blokkeerde de pipeline hard op de nieuwe storage-code. Hoewel de publieke internettoegang was uitgeschakeld, eist de CIS-benchmark dat de interne firewall-engine expliciet wordt geïnitialiseerd via een `network_rules` block met een `default_action = "Deny"`. Daarnaast moest `"AzureServices"` handmatig aan de `bypass`-lijst worden toegevoegd om te voorkomen dat de storage-firewall de legitieme back-up snapshots van de Recovery Services Vault zou blokkeren.
+3. **Provider API Upgrades (AzureRM v4 Breaking Changes):** Bij de overstap naar de nieuwste AzureRM v4 provider bleken parameters zoals `storage_container_id` en `retention_period_in_days` deprecated te zijn. De code is succesvol future-proof herschreven naar de nieuwe v4 API standaarden (`storage_account_id` en `immutability_period_in_days`), waardoor de pipeline volledig *warning-free* compileert met een totale blauwdruk van **57 resources**.
+
+---
+
+## 19. Uitgebreide Validatie & Bewijsvoering (Fase 2)
+
+Om aan te tonen dat de nieuwe storage-architectuur en back-up kluis succesvol zijn gevalideerd binnen de CI/CD pipeline, zijn de logs van de geautomatiseerde Pull Request-omgeving vastgelegd:
+
+### 1. Shift-Left Security & Format Validatie (CI)
+De GitHub Actions runner heeft na de OIDC-handshake met succes de syntax-controles doorlopen. De Aqua Security Trivy scanner heeft de code volledig geaudit tegen de CIS Microsoft Azure Foundations Benchmarks. Na het toepassen van de `network_rules` firewall hardening en de `AzureServices` bypass-configuratie, rapporteert Trivy een **100% clean security status (0 Misconfigurations)**.
+
+![GitHub Actions Trivy & Format Success](screenshots/48_github_actions_fmt_and_trivy_success.PNG)
+
+### 2. Warning-Free Terraform Plan (57 Resources Blueprint)
+Na de succesvolle security-audit heeft Terraform de remote state backend geïnitialiseerd, de state-lock succesvol verkregen op de centrale Azure Storage Account backend (`tfstatesveniac`), en de volledige warning-free blauwdruk gegenereerd. De logs tonen aan dat alle 42 netwerk-resources samen met de 15 nieuwe storage- en BCDR-resources foutloos parallel zullen worden opgebouwd:
+
+![Terraform Warning-Free Plan Summary](screenshots/49_tf_plan_storage_backup_added.PNG)
+
+---
