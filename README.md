@@ -4516,4 +4516,5 @@ Om ongewenste cloud-kosten te voorkomen na het samenvoegen van de code, is de `T
 
 Nadat het OIDC-systeem succesvol is opgeleverd, is de oude Client Secret definitief ingetrokken om de **Zero Trust** status te bereiken.
 
+![Main Branch Multi-Stage Gatekeeper](screenshots/47_github_actions_main_branch_frozen_apply.PNG)
 ![Statische Secrets Intrekking](screenshots/46_azure_client_secret_revoked.PNG)
