@@ -55,7 +55,7 @@ resource "azurerm_backup_protected_file_share" "share_backup" {
 # =====================================================================
 resource "azurerm_storage_container_immutability_policy" "ransomware_protection" {
   # AZURERM V4 FIX: Gewijzigd van storage_container_id naar de exacte Resource Manager ID string
-  storage_container_resource_manager_id = azurerm_storage_container.raw_data.resource_manager_id
+  storage_container_resource_manager_id = azurerm_storage_container.raw_data.id
 
   # AZURERM V4 FIX: Gewijzigd van retention_period_in_days naar immutability_period_in_days
   immutability_period_in_days = 7

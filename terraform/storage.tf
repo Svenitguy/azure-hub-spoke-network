@@ -24,15 +24,16 @@ resource "azurerm_storage_account" "secure_storage" {
 # NoSQL Blob Container voor ongestructureerde applicatiedata en logs
 resource "azurerm_storage_container" "raw_data" {
   name                  = "raw-data"
-  storage_account_name  = azurerm_storage_account.secure_storage.name
+  storage_account_id    = azurerm_storage_account.secure_storage.id
   container_access_type = "private"
 }
 
 # Gedeelde netwerkschijf (SMB) voor traditionele bestandsuitwisseling
 resource "azurerm_storage_share" "shared_files" {
-  name                 = "shared-files"
-  storage_account_name = azurerm_storage_account.secure_storage.name
-  quota                = 50 # 50 GB limiet om onverwachte cloudkosten te beheersen
+  name               = "shared-files"
+  storage_account_id = azurerm_storage_account.secure_storage.id
+
+  quota = 50 # 50 GB limiet om onverwachte cloudkosten te beheersen
 }
 
 # =====================================================================
