@@ -11,10 +11,11 @@ resource "azurerm_storage_account" "secure_storage" {
   # ZERO TRUST STAP 1: Openbare netwerktoegang op platformniveau uitschakelen
   public_network_access_enabled = false
 
-  # ZERO TRUST STAP 2 (FIX AZU-0012): Interne firewall-engine initialiseren op DENY
+  # ZERO TRUST STAP 2 (FIX AZU-0012 & AZU-0010): Interne firewall-engine initialiseren op DENY met AzureServices bypass
   network_rules {
     default_action = "Deny"
-    bypass         = ["Metrics", "Logging"] # Staat interne Azure services toe om logs te schrijven
+    # AZURERM V4 & TRIVY FIX: Voeg "AzureServices" toe om Trusted Microsoft Services (zoals Azure Backup) toe te laten via de backbone
+    bypass         = ["Metrics", "Logging", "AzureServices"] 
   }
 
   tags = var.tags
