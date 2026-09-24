@@ -9,7 +9,7 @@ resource "azurerm_storage_account" "secure_storage" {
   account_replication_type = "LRS" # FinOps: Voorkomt dubbele replicatiekosten in het lab
 
   # ZERO TRUST: De publieke deur naar het internet direct hardhandig sluiten
-  public_network_access_enabled = false 
+  public_network_access_enabled = false
 
   tags = var.tags
 }
