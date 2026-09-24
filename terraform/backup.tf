@@ -51,15 +51,13 @@ resource "azurerm_backup_protected_file_share" "share_backup" {
 }
 
 # =====================================================================
-# 3. RANSOMWARE BESCHERMING (Immutable WORM Policy)
+# 3. RANSOMWARE BESCHERMING (Immutable WORM Policy - AzureRM v4 compliant)
 # =====================================================================
 resource "azurerm_storage_container_immutability_policy" "ransomware_protection" {
-  storage_container_id = azurerm_storage_container.raw_data.id
+  # AZURERM V4 FIX: Gewijzigd van storage_container_id naar de exacte Resource Manager ID string
+  storage_container_resource_manager_id = azurerm_storage_container.raw_data.resource_manager_id
 
-  # Aantal dagen dat data mathematisch beschermd is tegen overschrijven/wissen
-  retention_period_in_days = 7
-
-  # LAB BEST PRACTICE: Laat dit op false. Als je dit op true zet (Locked), 
-  # kan de container NOOIT meer worden verwijderd, wat problemen geeft bij een 'terraform destroy'.
-  protected_until_date_is_locked = false
+  # AZURERM V4 FIX: Gewijzigd van retention_period_in_days naar immutability_period_in_days
+  immutability_period_in_days = 7
 }
+

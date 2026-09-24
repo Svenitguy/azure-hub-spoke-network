@@ -30,3 +30,28 @@ resource "azurerm_monitor_diagnostic_setting" "fw_diag" {
     category = "AllMetrics"
   }
 }
+
+# =====================================================================
+# 3. DIAGNOSTIC SETTINGS VOOR STORAGE ACCOUNT (Blob Auditing)
+# =====================================================================
+resource "azurerm_monitor_diagnostic_setting" "storage_diag" {
+  name                       = "storage-audit-to-law"
+  target_resource_id         = "${azurerm_storage_account.secure_storage.id}/blobServices/default"
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.law.id
+
+  enabled_log {
+    category = "StorageRead"
+  }
+
+  enabled_log {
+    category = "StorageWrite"
+  }
+
+  enabled_log {
+    category = "StorageDelete"
+  }
+
+  enabled_metric {
+    category = "AllMetrics"
+  }
+}
