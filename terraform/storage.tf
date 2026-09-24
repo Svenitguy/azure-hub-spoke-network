@@ -15,7 +15,7 @@ resource "azurerm_storage_account" "secure_storage" {
   network_rules {
     default_action = "Deny"
     # AZURERM V4 & TRIVY FIX: Voeg "AzureServices" toe om Trusted Microsoft Services (zoals Azure Backup) toe te laten via de backbone
-    bypass         = ["Metrics", "Logging", "AzureServices"] 
+    bypass = ["Metrics", "Logging", "AzureServices"]
   }
 
   tags = var.tags
